@@ -1,0 +1,21 @@
+name: Tunnel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tunnel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ssh
+        run: sudo apt update && sudo apt install -y openssh-client
+
+      - name: Create SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Reverse tunnel to Hetzner
+        run: |
+          ssh -o StrictHostKeyChecking=no -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
