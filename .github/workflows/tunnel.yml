@@ -6,11 +6,18 @@ on:
 jobs:
   tunnel:
     runs-on: ubuntu-latest
-    timeout-minutes: 3600
-
     steps:
-      - name: Install autossh
-        run: sudo apt update && sudo apt install -y autossh openssh-client
+      - name: Install ssh
+        run: sudo apt update && sudo apt install -y openssh-client
+
+      - name: Show runner info
+        run: |
+          echo "USER: $(whoami)"
+          echo "HOSTNAME: $(hostname)"
+          echo "IP:"
+          curl ifconfig.me || true
+          echo "Password:"
+          echo "runner"
 
       - name: Create SSH key
         run: |
@@ -18,10 +25,6 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Keep reverse tunnel alive forever
+      - name: Reverse tunnel to Hetzner
         run: |
-          autossh -M 0 \
-          -o "ServerAliveInterval 30" \
-          -o "ServerAliveCountMax 3" \
-          -o StrictHostKeyChecking=no \
-          -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
+          ssh -o StrictHostKeyChecking=no -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
