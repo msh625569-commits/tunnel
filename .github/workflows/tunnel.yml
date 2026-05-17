@@ -7,8 +7,17 @@ jobs:
   tunnel:
     runs-on: ubuntu-latest
     steps:
-      - name: Install ssh
-        run: sudo apt update && sudo apt install -y openssh-client autossh
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt install -y openssh-client wget
+
+      - name: Download chisel
+        run: |
+          wget https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_linux_amd64.gz
+          gunzip chisel_1.9.1_linux_amd64.gz
+          chmod +x chisel_1.9.1_linux_amd64
+          sudo mv chisel_1.9.1_linux_amd64 /usr/local/bin/chisel
 
       - name: Create SSH key
         run: |
@@ -16,8 +25,10 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Start permanent reverse tunnel
+      - name: Connect to Hetzner & create SOCKS
         run: |
-          autossh -M 0 -N -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" \
-          -o StrictHostKeyChecking=no \
-          -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
+          ssh -o StrictHostKeyChecking=no -N -D 127.0.0.1:1080 root@91.107.133.36 &
+      
+      - name: Start chisel server (Public entry)
+        run: |
+          chisel server --port 443 --reverse
