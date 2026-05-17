@@ -6,22 +6,22 @@ on:
 jobs:
   tunnel:
     runs-on: ubuntu-latest
+    timeout-minutes: 3600
 
     steps:
-      - name: Install SSH + AutoSSH
-        run: sudo apt-get update && sudo apt-get install -y openssh-client autossh
+      - name: Install autossh
+        run: sudo apt update && sudo apt install -y autossh openssh-client
 
-      - name: Setup SSH key
+      - name: Create SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 91.107.133.36 >> ~/.ssh/known_hosts
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-      - name: Start Reverse Tunnel (GitHub -> Hetzner)
+      - name: Keep reverse tunnel alive forever
         run: |
           autossh -M 0 \
           -o "ServerAliveInterval 30" \
           -o "ServerAliveCountMax 3" \
-          -o "StrictHostKeyChecking=no" \
+          -o StrictHostKeyChecking=no \
           -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
