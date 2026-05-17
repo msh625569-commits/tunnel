@@ -7,24 +7,30 @@ jobs:
   tunnel:
     runs-on: ubuntu-latest
     steps:
-      - name: Install ssh
-        run: sudo apt update && sudo apt install -y openssh-client
-
-      - name: Show runner info
+      - name: Install SSH server + client
         run: |
-          echo "USER: $(whoami)"
-          echo "HOSTNAME: $(hostname)"
-          echo "IP:"
-          curl ifconfig.me || true
-          echo "Password:"
-          echo "runner"
+          sudo apt update
+          sudo apt install -y openssh-server openssh-client
 
-      - name: Create SSH key
+      - name: Configure SSH server (runner)
+        run: |
+          sudo mkdir -p /var/run/sshd
+          echo 'root:root' | sudo chpasswd
+
+          sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
+
+          sudo service ssh restart
+
+      - name: Create SSH key for tunnel
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Reverse tunnel to Hetzner
+      - name: Create reverse tunnel to Hetzner
         run: |
           ssh -o StrictHostKeyChecking=no -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
