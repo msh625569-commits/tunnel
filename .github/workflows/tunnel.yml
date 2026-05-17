@@ -7,30 +7,17 @@ jobs:
   tunnel:
     runs-on: ubuntu-latest
     steps:
-      - name: Install SSH server + client
-        run: |
-          sudo apt update
-          sudo apt install -y openssh-server openssh-client
+      - name: Install ssh
+        run: sudo apt update && sudo apt install -y openssh-client autossh
 
-      - name: Configure SSH server (runner)
-        run: |
-          sudo mkdir -p /var/run/sshd
-          echo 'root:root' | sudo chpasswd
-
-          sudo sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/^PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-          sudo sed -i 's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
-
-          sudo service ssh restart
-
-      - name: Create SSH key for tunnel
+      - name: Create SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Create reverse tunnel to Hetzner
+      - name: Start permanent reverse tunnel
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -N -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
+          autossh -M 0 -N -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" \
+          -o StrictHostKeyChecking=no \
+          -R 0.0.0.0:2222:localhost:22 root@91.107.133.36
